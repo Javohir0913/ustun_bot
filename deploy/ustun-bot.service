@@ -1,0 +1,22 @@
+[Unit]
+Description=UstunSys Telegram bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=ustunbot
+Group=ustunbot
+WorkingDirectory=/opt/ustun_bot
+ExecStart=/opt/ustun_bot/.venv/bin/python bot.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+# Himoya: bot faqat o'z papkasiga yoza oladi
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/ustun_bot
+
+[Install]
+WantedBy=multi-user.target

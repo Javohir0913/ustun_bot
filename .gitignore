@@ -1,0 +1,13 @@
+# Maxfiy: token va admin ID
+.env
+
+# Shaxsiy ma'lumot (mijoz telefonlari) — GitHub'ga chiqmasin
+leads.csv
+leads.db
+leads.db-*
+*.bak
+
+# Muhit va keshlar
+.venv/
+__pycache__/
+.pytest_cache/
