@@ -13,6 +13,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from telegram import (InlineKeyboardButton, InlineKeyboardMarkup, InputFile, KeyboardButton,
                       ReplyKeyboardMarkup, ReplyKeyboardRemove, Update)
+from telegram.error import BadRequest
 from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
                           ContextTypes, ConversationHandler, MessageHandler, filters)
 
@@ -221,6 +222,15 @@ def admin_ids() -> set[int]:
 
 # ---------------------------------------------------------------- handlerlar
 
+async def safe_answer(q, text: str | None = None, **kwargs) -> None:
+    """Tugma bosilganini tasdiqlash. Bot o'chiq turganda bosilgan tugma uchun Telegram
+    'Query is too old' qaytaradi: bu handlerni to'xtatmasligi kerak, javob baribir yuboriladi."""
+    try:
+        await q.answer(text, **kwargs)
+    except BadRequest as e:
+        logging.info("Callback tasdiqlanmadi (%s)", e)
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(WELCOME, reply_markup=main_menu())
 
@@ -231,7 +241,7 @@ async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def menu_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await q.answer()
+    await safe_answer(q)
     await q.message.reply_text(MENU_TEXTS[q.data], reply_markup=main_menu())
 
 
@@ -239,13 +249,13 @@ async def stale_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Eski/muddati o'tgan tugma (masalan bot qayta ishga tushgandan keyin): soat belgisi
     osilib qolmasin va foydalanuvchi nima qilishni bilsin."""
     q = update.callback_query
-    await q.answer("Bu tugma eskirgan. Qaytadan boshlang.")
+    await safe_answer(q, "Bu tugma eskirgan. Qaytadan boshlang.")
     await q.message.reply_text(WELCOME, reply_markup=main_menu())
 
 
 async def lead_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await q.answer()
+    await safe_answer(q)
     context.user_data.clear()
     await q.message.reply_text("Ismingiz nima?\n(Bekor qilish: /cancel)",
                                reply_markup=ReplyKeyboardRemove())
@@ -322,7 +332,7 @@ async def topic_hint(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def got_topic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await q.answer()
+    await safe_answer(q)
     user = update.effective_user
     lead = {
         "vaqt": datetime.now(TASHKENT).strftime("%Y-%m-%d %H:%M"),
@@ -402,10 +412,10 @@ async def settings_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def toggle_skip_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     if q.from_user.id not in admin_ids():
-        await q.answer("Bu faqat admin uchun.", show_alert=True)
+        await safe_answer(q, "Bu faqat admin uchun.", show_alert=True)
         return
     set_setting("skip_phone", "0" if skip_phone_enabled() else "1")
-    await q.answer("Saqlandi")
+    await safe_answer(q, "Saqlandi")
     await q.edit_message_reply_markup(reply_markup=settings_menu())
 
 

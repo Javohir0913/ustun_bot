@@ -287,3 +287,19 @@ def test_migration_from_v1(tmp_path, monkeypatch):
     bot.init_db(legacy_csv=tmp_path / "none.csv")
     bot.set_setting("skip_phone", "0")
     assert bot.skip_phone_enabled() is False
+
+
+def test_old_callback_query_still_replies(db, monkeypatch):
+    """Bot o'chiq paytda bosilgan tugma: answerCallbackQuery rad etilsa ham javob yuboriladi."""
+    orig = FakeRequest.do_request
+
+    async def do_request(self, url, method, request_data=None, **kwargs):
+        if url.endswith("answerCallbackQuery"):
+            self.calls.append(("answerCallbackQuery", {}))
+            return 400, json.dumps({"ok": False, "error_code": 400, "description":
+                                    "Bad Request: query is too old"}).encode()
+        return await orig(self, url, method, request_data, **kwargs)
+
+    monkeypatch.setattr(FakeRequest, "do_request", do_request)
+    fake = run_steps([cb_update(1, "price")])
+    assert bot.PRICE in fake.texts(555)
