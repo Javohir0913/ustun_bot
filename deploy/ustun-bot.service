@@ -11,6 +11,8 @@ ExecStart=/opt/ustun_bot/.venv/bin/python bot.py
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
+# Bot yaratgan fayllar (leads.db) bot va ustunbot guruhiga ochiq, boshqalarga yopiq
+UMask=0007
 # Himoya: bot faqat o'z papkasiga yoza oladi
 NoNewPrivileges=true
 ProtectSystem=strict

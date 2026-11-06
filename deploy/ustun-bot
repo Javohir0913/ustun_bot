@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Botni boshqarish buyrug'i. Root nomidan /usr/local/bin/ustun-bot ga o'rnatiladi va
+# sudoers orqali `ustunbot` guruhiga faqat SHU fayl ruxsat etiladi (to'liq sudo emas).
+# Ishlatish: sudo ustun-bot {status|restart|logs [N]|follow|update}
+set -euo pipefail
+DIR=/opt/ustun_bot
+SVC=ustun-bot
+
+show_status() { systemctl --no-pager --lines=5 status "$SVC"; }
+
+case "${1:-}" in
+  status)  show_status ;;
+  restart) systemctl restart "$SVC"; sleep 3; show_status ;;
+  logs)
+    n="${2:-100}"
+    [[ "$n" =~ ^[0-9]{1,5}$ ]] || { echo "N son bo'lishi kerak"; exit 1; }
+    journalctl -u "$SVC" --no-pager -n "$n" ;;
+  follow)  journalctl -u "$SVC" -f ;;   # -f rejimida pager ishlamaydi
+  update)
+    # git va pip root emas, bot foydalanuvchisi nomidan ishlaydi
+    sudo -u ustunbot git -C "$DIR" pull --ff-only
+    sudo -u ustunbot "$DIR/.venv/bin/pip" install -q -r "$DIR/requirements.txt"
+    systemctl restart "$SVC"; sleep 3; show_status ;;
+  *)
+    echo "Ishlatish: sudo ustun-bot {status|restart|logs [N]|follow|update}"; exit 1 ;;
+esac
